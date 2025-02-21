@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebPenTest Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white font-mono">
+    <div class="container mx-auto p-4">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <h1 class="text-2xl font-bold text-cyan-400">WebPenTest Pro</h1>
+            <div class="flex space-x-4">
+                <button id="startProxy" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+                    <i class="bi bi-play-fill"></i> Start Proxy
+                </button>
+                <button id="stopProxy" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded hidden">
+                    <i class="bi bi-stop-fill"></i> Stop Proxy
+                </button>
+            </div>
+        </header>
+
+        <!-- Proxy Configuration -->
+        <div class="bg-gray-800 p-4 rounded-lg mb-6">
+            <h2 class="text-xl mb-4 text-cyan-400">Proxy Configuration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Proxy Port</label>
+                    <input type="number" id="proxyPort" value="8080" 
+                           class="bg-gray-700 p-2 rounded w-full text-white">
+                </div>
+                <div>
+                    <label class="block mb-2">Target URL</label>
+                    <input type="text" id="targetUrl" placeholder="https://example.com" 
+                           class="bg-gray-700 p-2 rounded w-full text-white">
+                </div>
+            </div>
+        </div>
+
+        <!-- Intercepted Requests -->
+        <div class="bg-gray-800 p-4 rounded-lg mb-6">
+            <h2 class="text-xl mb-4 text-cyan-400">Intercepted Requests</h2>
+            <div id="requestsList" class="space-y-4">
+                <!-- Request items will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Request Inspector -->
+        <div id="requestInspector" class="bg-gray-800 p-4 rounded-lg hidden">
+            <h2 class="text-xl mb-4 text-cyan-400">Request Inspector</h2>
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block mb-2">Method</label>
+                    <select id="requestMethod" class="bg-gray-700 p-2 rounded w-full">
+                        <option>GET</option>
+                        <option>POST</option>
+                        <option>PUT</option>
+                        <option>DELETE</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Headers</label>
+                    <textarea id="requestHeaders" rows="4" 
+                            class="bg-gray-700 p-2 rounded w-full font-mono"></textarea>
+                </div>
+                <div>
+                    <label class="block mb-2">Body</label>
+                    <textarea id="requestBody" rows="4" 
+                            class="bg-gray-700 p-2 rounded w-full font-mono"></textarea>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="forwardRequest" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                        <i class="bi bi-arrow-right"></i> Forward
+                    </button>
+                    <button id="dropRequest" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">
+                        <i class="bi bi-trash"></i> Drop
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isProxyRunning = false;
+        let interceptedRequests = [];
+
+        // Simulate proxy functionality
+        function startProxy() {
+            isProxyRunning = true;
+            document.getElementById('startProxy').classList.add('hidden');
+            document.getElementById('stopProxy').classList.remove('hidden');
+            
+            // Simulate incoming requests
+            simulateRequest();
+        }
+
+        function stopProxy() {
+            isProxyRunning = false;
+            document.getElementById('startProxy').classList.remove('hidden');
+            document.getElementById('stopProxy').classList.add('hidden');
+        }
+
+        function simulateRequest() {
+            if (!isProxyRunning) return;
+
+            const request = {
+                id: Date.now(),
+                method: Math.random() > 0.5 ? 'GET' : 'POST',
+                url: document.getElementById('targetUrl').value || 'https://example.com',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0',
+                    'Accept': '*/*',
+                    'Cookie': 'session=xyz123'
+                },
+                body: Math.random() > 0.5 ? '{"key": "value"}' : ''
+            };
+
+            interceptedRequests.push(request);
+            addRequestToList(request);
+
+            // Simulate new requests every few seconds
+            setTimeout(simulateRequest, Math.random() * 5000 + 2000);
+        }
+
+        function addRequestToList(request) {
+            const requestsList = document.getElementById('requestsList');
+            const requestElement = document.createElement('div');
+            requestElement.className = 'bg-gray-700 p-4 rounded cursor-pointer hover:bg-gray-600';
+            requestElement.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-xs px-2 py-1 rounded ${request.method === 'GET' ? 'bg-blue-600' : 'bg-green-600'}">
+                            ${request.method}
+                        </span>
+                        <span class="ml-2">${request.url}</span>
+                    </div>
+                    <span class="text-gray-400 text-sm">${new Date(request.id).toLocaleTimeString()}</span>
+                </div>
+            `;
+            
+            requestElement.onclick = () => inspectRequest(request);
+            requestsList.insertBefore(requestElement, requestsList.firstChild);
+        }
+
+        function inspectRequest(request) {
+            document.getElementById('requestInspector').classList.remove('hidden');
+            document.getElementById('requestMethod').value = request.method;
+            document.getElementById('requestHeaders').value = JSON.stringify(request.headers, null, 2);
+            document.getElementById('requestBody').value = request.body;
+        }
+
+        // Event Listeners
+        document.getElementById('startProxy').onclick = startProxy;
+        document.getElementById('stopProxy').onclick = stopProxy;
+        document.getElementById('forwardRequest').onclick = () => {
+            alert('Request forwarded to target server');
+            document.getElementById('requestInspector').classList.add('hidden');
+        };
+        document.getElementById('dropRequest').onclick = () => {
+            alert('Request dropped');
+            document.getElementById('requestInspector').classList.add('hidden');
+        };
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
